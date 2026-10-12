@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CV Generator – M. Rolantiro Al Faqih</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#eef0f4;color:#1c2333;font-size:14px;overflow:hidden}
+#app{display:flex;height:100%}
+#panel{width:440px;max-width:48vw;background:#fff;border-right:1px solid #d8dce6;display:flex;flex-direction:column;min-width:340px}
+#panel header{padding:14px 18px;background:#1F2A44;color:#fff}
+#panel header h1{font-size:16px;margin:0 0 2px}
+#panel header p{margin:0;font-size:12px;opacity:.75}
+.tabs{display:flex;border-bottom:1px solid #d8dce6;background:#f6f7fa}
+.tabs button{flex:1;padding:10px 4px;border:0;background:none;font-size:12.5px;cursor:pointer;color:#555;border-bottom:3px solid transparent}
+.tabs button.on{color:#1F2A44;font-weight:bold;border-bottom-color:#C9A24D;background:#fff}
+.tabbody{flex:1;overflow:auto;padding:16px 18px 30px}
+.tab{display:none}.tab.on{display:block}
+label{display:block;font-size:12px;font-weight:bold;margin:12px 0 4px;color:#33405e}
+input[type=text],textarea{width:100%;padding:8px 10px;border:1px solid #c5cad8;border-radius:6px;font:inherit;font-size:13px;background:#fff}
+textarea{min-height:110px;resize:vertical;line-height:1.4}
+input:focus,textarea:focus{outline:2px solid #C9A24D55;border-color:#C9A24D}
+.hint{font-size:11.5px;color:#6b7390;margin:4px 0 0;line-height:1.4}
+.hint code{background:#eef0f4;padding:1px 4px;border-radius:3px}
+.chk{display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:13px;font-weight:normal}
+.chk input{margin-top:2px}
+.big{display:flex;gap:8px;margin-top:16px}
+.btn{padding:11px 14px;border-radius:8px;border:0;font-weight:bold;font-size:14px;cursor:pointer;flex:1}
+.btn.pdf{background:#1F2A44;color:#fff}.btn.jpg{background:#C9A24D;color:#1F2A44}
+.btn.sm{padding:6px 10px;font-size:12px;flex:none;background:#e6e9f1;color:#1F2A44;font-weight:normal}
+.btn:disabled{opacity:.5;cursor:wait}
+.fname{font-size:12px;color:#555;margin-top:10px;word-break:break-all}
+.photo-row{display:flex;gap:12px;align-items:center;margin-top:6px}
+.photo-row img{width:70px;height:70px;border-radius:50%;object-fit:cover;border:2px solid #C9A24D}
+.drop{border:2px dashed #aab1c6;border-radius:10px;padding:18px;text-align:center;color:#555;cursor:pointer;background:#fafbfd}
+.drop.over{background:#fff7e0;border-color:#C9A24D}
+.cert{display:flex;gap:10px;border:1px solid #d8dce6;border-radius:8px;padding:8px;margin-top:10px;background:#fafbfd}
+.cert img{width:86px;height:62px;object-fit:cover;border-radius:4px;border:1px solid #ccc;flex:none}
+.cert .f{flex:1;min-width:0}
+.cert input[type=text]{padding:5px 8px;font-size:12.5px;margin-bottom:4px}
+.cert .act{display:flex;gap:4px;align-items:center;font-size:12px}
+.cert .act button{border:1px solid #c5cad8;background:#fff;border-radius:5px;cursor:pointer;padding:2px 7px}
+#right{flex:1;display:flex;flex-direction:column;min-width:0}
+#bar{padding:10px 18px;background:#fff;border-bottom:1px solid #d8dce6;display:flex;gap:10px;align-items:center}
+#bar .info{flex:1;font-size:12.5px;color:#555}
+#bar .btn{flex:none;padding:9px 16px}
+#preview{flex:1;overflow:auto;padding:20px}
+.pvwrap{margin:0 auto 18px;box-shadow:0 2px 12px #0003;background:#fff;position:relative}
+.pvwrap>.page{transform-origin:0 0;position:absolute;left:0;top:0}
+#stage{position:fixed;left:0;top:0;width:794px;z-index:-1;pointer-events:none;background:#fff}
+#busy{position:fixed;inset:0;background:#0008;color:#fff;display:none;align-items:center;justify-content:center;font-size:17px;z-index:99}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1F2A44;color:#fff;padding:10px 18px;border-radius:8px;display:none;z-index:100;font-size:13px}
+/* ===== CV pages ===== */
+.page{width:794px;height:1123px;position:relative;background:#fff;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#222;font-size:12px;line-height:16px}
+.page .sb{position:absolute;left:0;top:0;bottom:0;width:250px;background:#1F2A44;color:#fff;padding:26px 22px;font-size:11px;line-height:14.5px;overflow:hidden}
+.page .stripe{position:absolute;left:250px;top:0;bottom:0;width:4px;background:#C9A24D}
+.page .main{position:absolute;overflow:hidden}
+.page.p1 .main{left:284px;right:30px;top:30px;bottom:30px}
+.page.pn .main{left:50px;right:50px;top:44px;bottom:36px}
+.page.pn .bar{position:absolute;left:0;right:0;top:0;height:18px;background:#1F2A44}
+.sb .photo{display:block;width:166px;height:166px;border-radius:50%;object-fit:cover;margin:0 auto 6px;border:3px solid #C9A24D}
+.sb h3{color:#C9A24D;font-size:14px;margin:14px 0 4px;letter-spacing:.3px;text-transform:uppercase}
+.sb p{margin:0 0 4px}
+.sb a{color:#fff;text-decoration:none}
+.sb .t{font-weight:bold}
+.sb .b{display:flex;gap:6px;margin-bottom:2px}.sb .b i{font-style:normal;flex:none}
+.sb.tight{font-size:10.2px;line-height:13.2px}.sb.tighter{font-size:9.4px;line-height:12px}
+.sb.tight h3,.sb.tighter h3{margin-top:10px}
+.main .nm{font-size:31px;line-height:36px;font-weight:bold;color:#1F2A44}
+.main .jb{font-size:14px;font-weight:bold;color:#C9A24D;margin-bottom:2px}
+.main .tg{font-size:11.5px;color:#555;font-style:italic;margin-bottom:4px}
+.main h2{font-size:14.5px;line-height:18px;color:#1F2A44;text-transform:uppercase;margin:14px 0 4px;padding-bottom:2px;border-bottom:1.3px solid #C9A24D}
+.main .org{font-weight:bold;font-size:12.7px;color:#000;margin-top:8px;line-height:16px}
+.main .dt{font-size:11.3px;font-style:italic;color:#555}
+.main .sub{font-weight:bold;color:#1F2A44;margin:1px 0}
+.main .b{display:flex;gap:7px;margin:0 0 2px;text-align:justify}.main .b i{font-style:normal;flex:none}
+.main .pp{text-align:justify;margin:0 0 3px}
+.main a{color:#1F5FBF;text-decoration:none}
+.main .m{color:#555;font-size:11px}
+.main .note{font-size:11.3px;color:#555;font-style:italic;margin-top:6px}
+.page.lamp{padding:44px 60px}
+.page.lamp h2{font-size:14.5px;color:#1F2A44;text-transform:uppercase;margin:0 0 8px;padding-bottom:2px;border-bottom:1.3px solid #C9A24D}
+.page.lamp .bar{position:absolute;left:0;right:0;top:0;height:18px;background:#1F2A44}
+.page.lamp .ci{text-align:center;margin-bottom:12px}
+.page.lamp .ci img{width:620px;max-width:100%;display:block;margin:0 auto;border:1px solid #ddd}
+.page.lamp .ci div{font-size:11px;margin-top:5px;line-height:14px}
+@media(max-width:900px){#app{flex-direction:column;overflow:auto}#panel{width:100%;max-width:none;height:70vh}body{overflow:auto}}
+</style>
+</head>
+<body>
+<div id="app">
+ <aside id="panel">
+  <header><h1>CV Generator</h1><p>Isi data lamaran, lihat pratinjau, unduh PDF atau JPG. Data tersimpan otomatis di browser ini.</p></header>
+  <nav class="tabs">
+   <button data-t="t1" class="on">Lamaran</button><button data-t="t2">Data Diri</button><button data-t="t3">Skill</button><button data-t="t4">Pengalaman</button><button data-t="t5">Sertifikat</button>
+  </nav>
+  <div class="tabbody">
+   <section class="tab on" id="t1">
+    <label>Nama perusahaan</label><input type="text" data-k="lamaran.perusahaan" placeholder="mis. RS Pondok Indah">
+    <label>Posisi / tujuan lamaran</label><input type="text" data-k="lamaran.posisi" placeholder="mis. Staf Rekam Medis">
+    <label class="chk"><input type="checkbox" data-k="lamaran.showTarget"><span>Tampilkan "Melamar sebagai: posisi di perusahaan" di bawah nama</span></label>
+    <label class="chk"><input type="checkbox" data-k="lamaran.posisiJabatan"><span>Pakai posisi lamaran sebagai judul jabatan di CV</span></label>
+    <label class="chk"><input type="checkbox" data-k="lamaran.daftarSert"><span>Tampilkan daftar sertifikat di CV</span></label>
+    <label class="chk"><input type="checkbox" data-k="lamaran.lampiran"><span>Sertakan lampiran salinan sertifikat (yang dicentang di tab Sertifikat)</span></label>
+    <div class="big"><button class="btn pdf" id="dlPdf">Unduh PDF</button><button class="btn jpg" id="dlJpg">Unduh JPG</button></div>
+    <div class="fname" id="fname"></div>
+    <p class="hint">JPG: jika CV lebih dari satu halaman, file diunduh sebagai ZIP berisi satu JPG per halaman.</p>
+    <p style="margin-top:22px"><button class="btn sm" id="reset">Kembalikan data awal</button></p>
+   </section>
+   <section class="tab" id="t2">
+    <label>Foto</label>
+    <div class="photo-row"><img id="fotoPrev" alt=""><input type="file" id="fotoIn" accept="image/*"></div>
+    <label>Nama lengkap</label><input type="text" data-k="nama">
+    <label>Judul jabatan (di bawah nama)</label><input type="text" data-k="jabatan">
+    <label>Alamat</label><input type="text" data-k="alamat">
+    <label>Telepon</label><input type="text" data-k="telepon">
+    <label>Email</label><input type="text" data-k="email">
+    <label>LinkedIn</label><input type="text" data-k="linkedin">
+    <label>Profil</label><textarea data-k="profil" style="min-height:190px"></textarea>
+   </section>
+   <section class="tab" id="t3">
+    <label>Pendidikan</label><textarea data-k="pendidikan"></textarea>
+    <p class="hint">Format: <code>## Nama Sekolah | 2022 – 2025</code>, lalu baris biasa atau <code>- poin</code>.</p>
+    <label>Bahasa</label><textarea data-k="bahasa" style="min-height:60px"></textarea>
+    <label>Hard skill</label><textarea data-k="hard"></textarea>
+    <label>Software</label><textarea data-k="software" style="min-height:60px"></textarea>
+    <label>Soft skill</label><textarea data-k="soft"></textarea>
+    <p class="hint">Satu skill per baris.</p>
+   </section>
+   <section class="tab" id="t4">
+    <p class="hint">Format tiap bagian: <code>## Nama Tempat | Tanggal</code> untuk judul, <code>&gt; Subjudul</code> (opsional), dan <code>- poin</code> untuk tiap uraian. Link otomatis bisa diklik.</p>
+    <label>Pengalaman Praktik Kerja Lapangan</label><textarea data-k="pkl" style="min-height:240px"></textarea>
+    <label>Pengalaman Kerja</label><textarea data-k="kerja"></textarea>
+    <label>Pengalaman Organisasi &amp; Kepanitiaan</label><textarea data-k="organisasi"></textarea>
+    <label>Project Pribadi</label><textarea data-k="project" style="min-height:200px"></textarea>
+   </section>
+   <section class="tab" id="t5">
+    <div class="drop" id="drop">Klik atau seret file sertifikat ke sini<br><span class="hint">JPG, PNG, atau PDF (halaman pertama). Boleh banyak file sekaligus.</span></div>
+    <input type="file" id="certIn" accept="image/*,application/pdf" multiple style="display:none">
+    <p class="hint">Isi nama sertifikat dan keterangan (penyelenggara, tanggal). Centang untuk menyertakan di CV dan lampiran.</p>
+    <div id="certList"></div>
+   </section>
+  </div>
+ </aside>
+ <main id="right">
+  <div id="bar"><div class="info" id="info"></div><button class="btn pdf" id="dlPdf2">PDF</button><button class="btn jpg" id="dlJpg2">JPG</button></div>
+  <div id="preview"></div>
+ </main>
+</div>
+<div id="stage"></div>
+<div id="busy">Membuat file, mohon tunggu…</div>
+<div id="toast"></div>
+<script>
+const DEF = {"foto": "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23e8eaf0'/%3E%3Ccircle cx='100' cy='78' r='34' fill='%23aab1c6'/%3E%3Cellipse cx='100' cy='170' rx='62' ry='48' fill='%23aab1c6'/%3E%3C/svg%3E", "certs": [], "nama": "M. Rolantiro Al Faqih", "jabatan": "Rekam Medis & Informasi Kesehatan", "alamat": "", "telepon": "", "email": "", "linkedin": "", "profil": "Lulusan D3 Rekam Medis dan Informasi Kesehatan Universitas Esa Unggul dengan pengalaman praktik kerja lapangan di berbagai fasilitas kesehatan, termasuk rumah sakit dan puskesmas. Memiliki kemampuan dalam pengelolaan rekam medis manual maupun elektronik, pengkodean penyakit dan tindakan berdasarkan ICD-10 dan ICD-9-CM, serta audit dan analisis data kesehatan. Terbiasa menggunakan Sistem Informasi Rumah Sakit serta aplikasi pendukung seperti QGIS dan Microsoft Office. Memiliki kemampuan adaptasi yang baik, berkolaborasi efektif dalam tim maupun individu, serta berkomitmen tinggi menjaga kualitas dan kerahasiaan data kesehatan pasien.", "pendidikan": "## Universitas Esa Unggul | 2022 – 2025\nD3 Rekam Medis dan Informasi Kesehatan, Semester 6\nIPK: 3.48 / 4.00\nKTI: Analisis Spasial Faktor Resiko Sebaran Penyakit Tuberkulosis di UPTD Puskesmas Medan Satria\n## SMAN 1 Kotabumi | 2019 – 2022", "bahasa": "Bahasa Inggris: TOEFL PBT Prediction 590 (valid hingga Februari 2029)", "hard": "Analisis dan pengolahan data melalui statistik kesehatan\nAudit kesehatan untuk memastikan kualitas dan kelengkapan data medis\nPemahaman dasar ICD-10 dan ICD-9 untuk kodefikasi penyakit dan tindakan\nTerbiasa menggunakan Rekam Medis Elektronik (RME)\nMemahami proses pendaftaran pasien di rumah sakit", "software": "Microsoft Office (Word, Excel – Dasar)\nQGIS", "soft": "Kolaborasi tim untuk menyelesaikan proyek tepat waktu\nAdaptif terhadap perubahan situasi mendadak\nManajemen waktu yang baik\nPemecahan masalah dengan mengidentifikasi akar penyebab\nJujur dan bertanggung jawab", "pkl": "## Rumah Sakit Daerah Koja, Jakarta Utara | 04 – 15 September 2023\n> Pengelolaan Rekam Medis\n- Melakukan assembling dokumen rekam medis sesuai standar kelengkapan dan urutan yang ditetapkan, sehingga berhasil menyusun dokumen secara efisien dalam jangka waktu yang telah ditentukan.\n- Melakukan pengkodean diagnosis dan tindakan medis berdasarkan informasi dalam rekam medis sesuai standar ICD-10 dan ICD-9-CM.\n- Menyusun dan mengelola dokumen rekam medis pasien di unit filing agar tertata rapi, sistematis, dan mudah diakses kembali.\n- Menginput data administrasi pasien IGD, rawat jalan, dan rawat inap ke dalam Sistem Informasi Rumah Sakit (SIRS).\n## Rumah Sakit Islam Jakarta Sukapura, Jakarta Utara | 12 – 23 Februari 2024\n> Manajemen Rekam Medis Hybrid dan Statistik Fasilitas Pelayanan Kesehatan\n- Menata dan menyimpan berkas rekam medis di unit filing sesuai sistem penjajaran yang berlaku untuk memastikan kemudahan dan kecepatan dalam pencarian saat dibutuhkan.\n- Melakukan assembling dokumen rekam medis untuk memastikan kelengkapan dan urutan dokumen sesuai standar rumah sakit.\n- Melakukan alih media dengan memindai BRM dari bentuk fisik ke format digital untuk mendukung digitalisasi arsip.\n- Menginput kode diagnosis dan tindakan medis ke dalam sistem berdasarkan informasi dari rekam medis pasien.\n- Menyeleksi BRM berdasarkan nilai guna seperti administratif, hukum, pendidikan, dan penelitian.\n- Terlibat dalam rekapitulasi data kunjungan dan jenis layanan sebagai bagian dari analisis statistik pelayanan kesehatan.\n- Menghitung proyeksi kebutuhan informasi di masa depan melalui analisis data origin.\n- Melakukan kajian sederhana menggunakan metode SWOT untuk mengevaluasi sistem pengelolaan rekam medis dan informasi kesehatan.\n## Puskesmas Medan Satria, Bekasi | 05 – 16 Agustus 2024\n- Menggunakan Sistem Informasi Geografis (SIG) untuk memetakan data wilayah dan kebutuhan pelayanan kesehatan.\n- Menyusun rencana kegiatan unit kerja berdasarkan analisis kebutuhan dan sumber daya yang tersedia.\n- Melaksanakan penjaminan mutu untuk memastikan pelayanan kesehatan berjalan sesuai standar.\n- Melakukan audit pendokumentasian klinis guna menilai kelengkapan dan kualitas rekam medis.\n- Mengklasifikasikan dan mengkodefikasi penyakit sistem genitourinari, reproduksi, perinatal, dan kongenital sesuai standar ICD.\n## Rumah Sakit Sint Carolus, Jakarta Pusat | 03 – 21 Maret 2025\n- Menggunakan Rekam Kesehatan Elektronik (RKE) untuk pencatatan dan pengelolaan data pasien secara digital.\n- Menganalisis alur dan kebutuhan data dalam sistem informasi kesehatan di fasilitas pelayanan.\n- Melakukan audit rekam medis untuk memastikan kelengkapan dan kepatuhan isi dokumen medis.\n- Memahami proses pembiayaan kesehatan termasuk klaim layanan dan sistem INA-CBG’s.\n- Melakukan reseleksi kode morbiditas dan mortalitas berdasarkan standar ICD-10 untuk menjaga akurasi data.", "kerja": "## Tenaga Kerja Sukarela – Puskesmas Kotabumi Udik, Lampung Utara | 01 Oktober – 31 Desember 2025\n- Menggunakan Aplikasi Rekam Medis Elektronik (RME).\n- Menjaga anjungan mandiri.\n- Menjaga loket pendaftaran pasien.", "organisasi": "## Skyland Festival | 2026\n- Sekretaris\n- Koordinator Kesehatan\n- LO Perunggu\n## The Sounds Project Vol.9 | 2026\n- Volunteer Service Area", "project": "## Tuberkulosis Care 0.1\n- Mengembangkan aplikasi web yang membantu mengurangi stigma terhadap pasien TB melalui proses pendaftaran yang lebih privat dan digital. Sistem dilengkapi fitur antrean online, konsultasi dokter, dan monitoring kepatuhan minum OAT untuk meningkatkan efisiensi layanan serta pemantauan pengobatan pasien.\n- https://rolantiro.github.io/Projectrolan/Tuberkulosis%20Care%200.1.html\n## ICD Navigator\n- Mengembangkan mesin pencari ICD-10 dan ICD-9 berbasis web yang mengintegrasikan kode diagnosis dan tindakan medis dalam satu platform. Sistem dirancang untuk mengurangi kesalahan pengkodean, mempercepat proses pencarian, serta mendukung tenaga kesehatan dan pelajar melalui fitur pencarian cerdas dan referensi prosedur terkait.\n- https://rolantiro.github.io/Projectrolan/icd_navigator.html", "lamaran": {"perusahaan": "", "posisi": "", "showTarget": false, "posisiJabatan": false, "daftarSert": true, "lampiran": true}};
+const LS = 'cv_app_v1';
+let S = loadState();
+function loadState(){
+  try{ const r=localStorage.getItem(LS); if(r){ const o=JSON.parse(r); const d=structuredClone(DEF); Object.assign(d,o); d.lamaran=Object.assign({},DEF.lamaran,o.lamaran||{}); return d; } }catch(e){}
+  return structuredClone(DEF);
+}
+let saveWarned=false;
+function save(){ try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){ if(!saveWarned){saveWarned=true;toast('Penyimpanan browser penuh, perubahan tidak tersimpan permanen.');} } }
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3500);}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function getp(p){return p.split('.').reduce((o,k)=>o&&o[k],S)}
+function setp(p,v){const a=p.split('.');let o=S;while(a.length>1)o=o[a.shift()];o[a[0]]=v}
+
+/* ---------- form binding ---------- */
+function bindForm(){
+  $$('[data-k]').forEach(el=>{
+    const v=getp(el.dataset.k);
+    if(el.type==='checkbox') el.checked=!!v; else el.value=v??'';
+    el.addEventListener('input',()=>{ setp(el.dataset.k, el.type==='checkbox'?el.checked:el.value); save(); schedule(); });
+  });
+  $('#fotoPrev').src=S.foto;
+}
+$$('.tabs button').forEach(b=>b.onclick=()=>{ $$('.tabs button').forEach(x=>x.classList.toggle('on',x===b)); $$('.tab').forEach(t=>t.classList.toggle('on',t.id===b.dataset.t)); });
+
+/* ---------- image helpers ---------- */
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+function readFile(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});}
+async function shrink(src,maxW,q){
+  const im=await loadImg(src); const r=Math.min(1,maxW/im.width);
+  const c=document.createElement('canvas'); c.width=Math.round(im.width*r); c.height=Math.round(im.height*r);
+  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',q);
+}
+async function pdfFirstPage(file){
+  if(!window.pdfjsLib) throw new Error('pdf.js belum termuat (cek koneksi internet)');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const pg=await pdf.getPage(1); const v0=pg.getViewport({scale:1}); const sc=1300/v0.width; const vp=pg.getViewport({scale:sc});
+  const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+  await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  return c.toDataURL('image/jpeg',0.85);
+}
+$('#fotoIn').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ S.foto=await shrink(await readFile(f),700,0.9); $('#fotoPrev').src=S.foto; save(); schedule(); }catch(err){toast('Foto gagal dibaca');} };
+
+/* ---------- certificates ---------- */
+const drop=$('#drop'), certIn=$('#certIn');
+drop.onclick=()=>certIn.click();
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>addCerts([...e.dataTransfer.files]));
+certIn.onchange=e=>{addCerts([...e.target.files]);certIn.value='';};
+function cleanName(n){ return n.replace(/\.[^.]+$/,'').replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim(); }
+async function addCerts(files){
+  busy(true,'Memproses file…');
+  for(const f of files){
+    try{
+      let img;
+      if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)) img=await pdfFirstPage(f);
+      else if(f.type.startsWith('image/')) img=await shrink(await readFile(f),1400,0.85);
+      else continue;
+      S.certs.push({id:'c'+Date.now()+Math.random().toString(36).slice(2,6),img,judul:cleanName(f.name),ket:'',on:true});
+    }catch(err){ toast('Gagal membaca '+f.name+': '+(err.message||err)); }
+  }
+  busy(false); save(); drawCerts(); schedule();
+}
+function drawCerts(){
+  const box=$('#certList'); box.innerHTML='';
+  if(!S.certs.length){ box.innerHTML='<p class="hint">Belum ada sertifikat.</p>'; return; }
+  S.certs.forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='cert';
+    d.innerHTML='<img alt=""><div class="f"><input type="text" placeholder="Nama sertifikat"><input type="text" placeholder="Penyelenggara, tanggal"><div class="act"><label class="chk" style="margin:0"><input type="checkbox"> Sertakan</label><span style="flex:1"></span><button title="Naik">↑</button><button title="Turun">↓</button><button title="Hapus">✕</button></div></div>';
+    d.querySelector('img').src=c.img;
+    const [t1,t2]=d.querySelectorAll('input[type=text]'); t1.value=c.judul; t2.value=c.ket;
+    t1.oninput=()=>{c.judul=t1.value;save();schedule()}; t2.oninput=()=>{c.ket=t2.value;save();schedule()};
+    const cb=d.querySelector('input[type=checkbox]'); cb.checked=c.on; cb.onchange=()=>{c.on=cb.checked;save();schedule()};
+    const [up,dn,del]=d.querySelectorAll('button');
+    up.onclick=()=>{ if(i>0){[S.certs[i-1],S.certs[i]]=[S.certs[i],S.certs[i-1]];save();drawCerts();schedule();} };
+    dn.onclick=()=>{ if(i<S.certs.length-1){[S.certs[i+1],S.certs[i]]=[S.certs[i],S.certs[i+1]];save();drawCerts();schedule();} };
+    del.onclick=()=>{ S.certs.splice(i,1);save();drawCerts();schedule(); };
+    box.appendChild(d);
+  });
+}
+
+/* ---------- text parsing ---------- */
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function lin(s){
+  return esc(s).replace(/(https?:\/\/[^\s<]+)/g,m=>{ const u=m.replace(/&amp;/g,'&'); let d=u.replace(/^https?:\/\//,''); try{d=decodeURIComponent(d)}catch(e){} return '<a href="'+u.replace(/"/g,'%22')+'">'+esc(d)+'</a>'; });
+}
+function parseEntries(text){
+  const out=[]; let cur=null;
+  (text||'').split(/\r?\n/).forEach(raw=>{
+    const l=raw.trim(); if(!l) return;
+    if(l.startsWith('## ')){ const body=l.slice(3); const k=body.lastIndexOf(' | '); cur={title:k>=0?body.slice(0,k):body,date:k>=0?body.slice(k+3):'',items:[]}; out.push(cur); return; }
+    if(!cur){ cur={title:'',date:'',items:[]}; out.push(cur); }
+    if(l.startsWith('> ')) cur.items.push({t:'sub',x:l.slice(2)});
+    else if(/^[-•]\s/.test(l)) cur.items.push({t:'b',x:l.replace(/^[-•]\s+/,'')});
+    else cur.items.push({t:'p',x:l});
+  });
+  return out;
+}
+const bulletLines=t=>(t||'').split(/\r?\n/).map(s=>s.trim().replace(/^[-•]\s*/,'')).filter(Boolean);
+const itemHtml=(it,side)=> it.t==='sub'?'<div class="sub">'+lin(it.x)+'</div>' : it.t==='b'?'<div class="b"><i>•</i><span>'+lin(it.x)+'</span></div>' : '<div class="pp">'+lin(it.x)+'</div>';
+
+/* ---------- build CV ---------- */
+function sidebarHtml(){
+  let h='<img class="photo" src="'+S.foto+'" alt="">';
+  h+='<h3>Kontak</h3>';
+  if(S.alamat) h+='<p>'+esc(S.alamat)+'</p>';
+  if(S.telepon) h+='<p>'+esc(S.telepon)+'</p>';
+  if(S.email) h+='<p><a href="mailto:'+esc(S.email)+'">'+esc(S.email)+'</a></p>';
+  if(S.linkedin) h+='<p>LinkedIn: '+esc(S.linkedin)+'</p>';
+  const pend=parseEntries(S.pendidikan);
+  if(pend.length){ h+='<h3>Pendidikan</h3>'; pend.forEach(e=>{ if(e.title) h+='<p class="t" style="margin-top:6px">'+esc(e.title)+'</p>'; if(e.date) h+='<p>'+esc(e.date)+'</p>'; e.items.forEach(it=>{ h+= it.t==='b'?'<div class="b"><i>•</i><span>'+lin(it.x)+'</span></div>':'<p>'+lin(it.x)+'</p>'; }); }); }
+  [['Bahasa','bahasa'],['Hard Skill','hard'],['Software','software'],['Soft Skill','soft']].forEach(([t,k])=>{
+    const L=bulletLines(S[k]); if(!L.length) return;
+    h+='<h3>'+t+'</h3>'+L.map(x=>'<div class="b"><i>•</i><span>'+esc(x)+'</span></div>').join('');
+  });
+  return h;
+}
+function buildBlocks(){
+  const B=[];
+  // header
+  let hd='<div class="nm">'+esc(S.nama)+'</div>';
+  const L=S.lamaran, pos=(L.posisi||'').trim(), per=(L.perusahaan||'').trim();
+  const jab=(L.posisiJabatan&&pos)?pos:S.jabatan;
+  if(jab) hd+='<div class="jb">'+esc(jab)+'</div>';
+  if(L.showTarget&&(pos||per)) hd+='<div class="tg">Melamar sebagai: '+esc(pos||'-')+(per?' di '+esc(per):'')+'</div>';
+  B.push(hd);
+  const H=t=>'<h2>'+t+'</h2>';
+  if((S.profil||'').trim()) B.push(H('Profil')+'<div class="pp">'+lin(S.profil.trim().replace(/\s*\n\s*/g,' '))+'</div>');
+  const sec=(title,text)=>{
+    const E=parseEntries(text); if(!E.length) return;
+    E.forEach((e,ei)=>{
+      let head=(ei===0?H(title):'');
+      if(e.title) head+='<div class="org">'+esc(e.title)+'</div>';
+      if(e.date) head+='<div class="dt">'+esc(e.date)+'</div>';
+      let n=0; const items=[...e.items];
+      while(items.length && n<2){ const it=items.shift(); head+=itemHtml(it); n++; if(it.t!=='sub') break; }
+      B.push(head);
+      items.forEach(it=>B.push(itemHtml(it)));
+    });
+  };
+  sec('Pengalaman Praktik Kerja Lapangan',S.pkl);
+  sec('Pengalaman Kerja',S.kerja);
+  sec('Pengalaman Organisasi &amp; Kepanitiaan',S.organisasi);
+  sec('Project Pribadi',S.project);
+  const certs=S.certs.filter(c=>c.on&&c.judul.trim());
+  if(L.daftarSert&&certs.length){
+    certs.forEach((c,i)=>{
+      const line='<div class="b"><i>•</i><span><b>'+esc(c.judul)+'</b>'+(c.ket?' <span class="m">| '+esc(c.ket)+'</span>':'')+'</span></div>';
+      B.push((i===0?H('Sertifikat &amp; Pelatihan'):'')+line);
+    });
+    if(L.lampiran) B.push('<div class="note">Salinan sertifikat terlampir pada halaman berikutnya.</div>');
+  }
+  return B;
+}
+function newPage(n){
+  const p=document.createElement('div'); p.className='page '+(n===1?'p1':'pn');
+  p.innerHTML=(n===1?'<div class="sb"></div><div class="stripe"></div>':'<div class="bar"></div>')+'<div class="main"></div>';
+  if(n===1){ const sb=p.querySelector('.sb'); sb.innerHTML=sidebarHtml(); }
+  return p;
+}
+function buildPages(){
+  const stage=$('#stage'); stage.innerHTML='';
+  let n=1, p=newPage(1); stage.appendChild(p);
+  const fit=sb=>{ sb.classList.remove('tight','tighter'); if(sb.scrollHeight>sb.clientHeight+1){sb.classList.add('tight'); if(sb.scrollHeight>sb.clientHeight+1) sb.classList.add('tighter');} };
+  fit(p.querySelector('.sb'));
+  let main=p.querySelector('.main');
+  buildBlocks().forEach(html=>{
+    const w=document.createElement('div'); w.innerHTML=html;
+    const before=main.childNodes.length;
+    while(w.firstChild) main.appendChild(w.firstChild);
+    if(main.scrollHeight>main.clientHeight+1 && before>0){
+      const moved=[]; while(main.childNodes.length>before) moved.unshift(main.lastChild), main.removeChild(main.lastChild);
+      n++; p=newPage(n); stage.appendChild(p); main=p.querySelector('.main'); moved.forEach(m=>main.appendChild(m));
+    }
+  });
+  // lampiran
+  const certs=S.certs.filter(c=>c.on);
+  if(S.lamaran.lampiran && certs.length){
+    for(let i=0;i<certs.length;i+=2){
+      const lp=document.createElement('div'); lp.className='page lamp';
+      lp.innerHTML='<div class="bar"></div>'+(i===0?'<h2>Lampiran Sertifikat</h2>':'')+certs.slice(i,i+2).map((c,j)=>'<div class="ci"><img src="'+c.img+'" alt=""><div><b>'+(i+j+1)+'.</b> '+esc(c.judul)+(c.ket?' ('+esc(c.ket)+')':'')+'</div></div>').join('');
+      stage.appendChild(lp);
+    }
+  }
+}
+
+/* ---------- preview ---------- */
+let timer=null;
+function schedule(){ clearTimeout(timer); timer=setTimeout(render,250); updateFname(); }
+function render(){
+  buildPages();
+  const pv=$('#preview'); pv.innerHTML='';
+  const sc=Math.min(1,(pv.clientWidth-40)/794);
+  const pages=[...$('#stage').children];
+  pages.forEach(p=>{
+    const w=document.createElement('div'); w.className='pvwrap'; w.style.width=(794*sc)+'px'; w.style.height=(1123*sc)+'px';
+    const c=p.cloneNode(true); c.style.transform='scale('+sc+')'; w.appendChild(c); pv.appendChild(w);
+  });
+  $('#info').textContent=pages.length+' halaman';
+}
+window.addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(render,200)});
+
+/* ---------- export ---------- */
+const safe=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+function fileBase(){
+  const parts=['CV',safe(S.nama).split('_').slice(0,4).join('_'),safe(S.lamaran.posisi),safe(S.lamaran.perusahaan)].filter(Boolean);
+  return parts.join('_');
+}
+function updateFname(){ $('#fname').textContent='Nama file: '+fileBase()+'.pdf / .jpg'; }
+function busy(on,msg){ $('#busy').style.display=on?'flex':'none'; if(msg) $('#busy').textContent=msg; ['#dlPdf','#dlJpg','#dlPdf2','#dlJpg2'].forEach(s=>$(s).disabled=on); }
+function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000); }
+async function canvases(){
+  render(); await new Promise(r=>setTimeout(r,60));
+  const out=[]; const pages=[...$('#stage').children];
+  for(const p of pages){ out.push(await html2canvas(p,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false,scrollX:0,scrollY:0})); }
+  return out;
+}
+async function exportPdf(){
+  busy(true,'Membuat PDF…');
+  try{
+    const cs=await canvases(); const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
+    const pages=[...$('#stage').children], k=210/794;
+    cs.forEach((c,i)=>{
+      if(i>0) doc.addPage();
+      doc.addImage(c.toDataURL('image/jpeg',0.93),'JPEG',0,0,210,297);
+      const pr=pages[i].getBoundingClientRect();
+      pages[i].querySelectorAll('a[href]').forEach(a=>{ for(const r of a.getClientRects()){ doc.link((r.left-pr.left)*k,(r.top-pr.top)*k,r.width*k,r.height*k,{url:a.href}); } });
+    });
+    doc.setProperties({title:fileBase(),author:S.nama});
+    dl(doc.output('blob'),fileBase()+'.pdf');
+  }catch(e){ console.error(e); toast('Gagal membuat PDF: '+(e.message||e)); }
+  busy(false);
+}
+async function exportJpg(){
+  busy(true,'Membuat JPG…');
+  try{
+    const cs=await canvases();
+    const blobs=await Promise.all(cs.map(c=>new Promise(r=>c.toBlob(r,'image/jpeg',0.93))));
+    if(blobs.length===1) dl(blobs[0],fileBase()+'.jpg');
+    else{ const z=new JSZip(); blobs.forEach((b,i)=>z.file(fileBase()+'_hal'+(i+1)+'.jpg',b)); dl(await z.generateAsync({type:'blob'}),fileBase()+'_JPG.zip'); }
+  }catch(e){ console.error(e); toast('Gagal membuat JPG: '+(e.message||e)); }
+  busy(false);
+}
+['#dlPdf','#dlPdf2'].forEach(s=>$(s).onclick=exportPdf);
+['#dlJpg','#dlJpg2'].forEach(s=>$(s).onclick=exportJpg);
+$('#reset').onclick=()=>{ if(confirm('Kembalikan semua data ke versi awal? Perubahan dan sertifikat yang kamu tambahkan akan hilang.')){ try{localStorage.removeItem(LS)}catch(e){} S=structuredClone(DEF); bindForm(); drawCerts(); render(); updateFname(); } };
+
+bindForm(); drawCerts(); render(); updateFname();
+</script>
+</body>
+</html>
